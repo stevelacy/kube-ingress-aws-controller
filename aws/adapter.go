@@ -65,7 +65,7 @@ const (
 
 	nameTag = "Name"
 
-	certificateARNTag = "ingress:certificate-arn"
+	certificateARNsTag = "ingress:certificate-arns"
 )
 
 var (
@@ -216,15 +216,17 @@ func (a *Adapter) FindManagedStacks() ([]*Stack, error) {
 	return stacks, nil
 }
 
-// CreateStack creates a new Application Load Balancer using CloudFormation. The stack name is derived
-// from the Cluster ID and the certificate ARN (when available).
-// All the required resources (listeners and target group) are created in a transactional fashion.
+// CreateStack creates a new Application Load Balancer using CloudFormation.
+// The stack name is derived from the Cluster ID and a has of the certificate
+// ARNs (when available).
+// All the required resources (listeners and target group) are created in a
+// transactional fashion.
 // Failure to create the stack causes it to be deleted automatically.
-func (a *Adapter) CreateStack(certificateARN, scheme string) (string, error) {
+func (a *Adapter) CreateStack(certificateARNs []string, scheme string) (string, error) {
 	spec := &stackSpec{
-		name:            a.stackName(certificateARN, scheme),
+		name:            a.stackName(certificateARNs, scheme),
 		scheme:          scheme,
-		certificateARN:  certificateARN,
+		certificateARNs: certificateARNs,
 		securityGroupID: a.SecurityGroupID(),
 		subnets:         a.FindLBSubnets(scheme),
 		vpcID:           a.VpcID(),
@@ -240,11 +242,11 @@ func (a *Adapter) CreateStack(certificateARN, scheme string) (string, error) {
 	return createStack(a.cloudformation, spec)
 }
 
-func (a *Adapter) UpdateStack(stackName, certificateARN, scheme string) (string, error) {
+func (a *Adapter) UpdateStack(stackName string, certificateARNs []string, scheme string) (string, error) {
 	spec := &stackSpec{
 		name:            stackName,
 		scheme:          scheme,
-		certificateARN:  certificateARN,
+		certificateARNs: certificateARNs,
 		securityGroupID: a.SecurityGroupID(),
 		subnets:         a.FindLBSubnets(scheme),
 		vpcID:           a.VpcID(),
@@ -260,8 +262,8 @@ func (a *Adapter) UpdateStack(stackName, certificateARN, scheme string) (string,
 	return updateStack(a.cloudformation, spec)
 }
 
-func (a *Adapter) stackName(certificateARN, scheme string) string {
-	return normalizeStackName(a.ClusterID(), certificateARN, scheme)
+func (a *Adapter) stackName(certificateARNs []string, scheme string) string {
+	return normalizeStackName(a.ClusterID(), certificateARNs, scheme)
 }
 
 // GetStack returns the CloudFormation stack details with the name or ID from the argument
