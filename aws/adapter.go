@@ -64,8 +64,6 @@ const (
 	DefaultStackTTL                  = 5 * time.Minute
 
 	nameTag = "Name"
-
-	certificateARNsTag = "ingress:certificate-arns"
 )
 
 var (
